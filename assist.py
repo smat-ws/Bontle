@@ -1,35 +1,44 @@
 from openai import OpenAI
+import ollama
 import time
 from pygame import mixer
 import os
-#https://platform.openai.com/playground/assistants
-# Initialize the client and mixer
-client = OpenAI(default_headers={"OpenAI-Beta": "assistants=v2"})
+from dotenv import load_dotenv
+
+# Load environment variables from .env file
+load_dotenv()
+
+# Initialize the OpenAI client (for TTS only) with API key from .env and mixer
+client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 mixer.init()
 
-assistant_id = ""
-thread_id = ""
-
-# Retrieve the assistant and thread
-assistant = client.beta.assistants.retrieve(assistant_id)
-thread = client.beta.threads.retrieve(thread_id)
+# Global variable to store conversation history
+conversation_history = []
 
 def ask_question_memory(question):
-    global thread
-    client.beta.threads.messages.create(thread.id, role="user", content=question)
-    run = client.beta.threads.runs.create(thread_id=thread.id, assistant_id=assistant.id)
-    
-    while (run_status := client.beta.threads.runs.retrieve(thread_id=thread.id, run_id=run.id)).status != 'completed':
-        if run_status.status == 'failed':
-            return "The run failed."
-        time.sleep(1)
-    
-    messages = client.beta.threads.messages.list(thread_id=thread.id)
-    return messages.data[0].content[0].text.value
+    try:
+        system_message = os.getenv("SYSTEM_PROMPT")
+
+        # Add the new question to the conversation history
+        conversation_history.append({'role': 'user', 'content': question})
+        
+        # Include the system message and conversation history in the request
+        response = ollama.chat(model='gpt-oss:latest', messages=[
+            {'role': 'system', 'content': system_message},
+            *conversation_history
+        ])
+        
+        # Add the AI response to the conversation history
+        conversation_history.append({'role': 'assistant', 'content': response['message']['content']})
+        
+        return response['message']['content']
+    except ollama.ResponseError as e:
+        print(f"An error occurred: {e}")
+        return f"The request failed: {e}"
 
 def generate_tts(sentence, speech_file_path):
-    response = client.audio.speech.create(model="tts-1", voice="echo", input=sentence)
-    response.stream_to_file(speech_file_path)
+    response = client.audio.speech.create(model="tts-1", voice="shimmer", input=sentence)
+    response.write_to_file(speech_file_path)
     return str(speech_file_path)
 
 def play_sound(file_path):
