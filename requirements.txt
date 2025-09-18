@@ -1,5 +1,13 @@
 pyaudio
 SpeechRecognition
+python-dotenv
+ollama
+openai
+pygame
+RealtimeSTT
+python-weather
+icrawler
+spotipy
 --extra-index-url https://download.pytorch.org/whl/cu116
 torch
 git+https://github.com/openai/whisper.git

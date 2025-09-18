@@ -4,8 +4,8 @@ import time
 import tools
 
 if __name__ == '__main__':
-    recorder = AudioToTextRecorder(spinner=False, model="tiny.en", language="en", post_speech_silence_duration =0.1, silero_sensitivity = 0.4)
-    hot_words = ["jarvis"]
+    recorder = AudioToTextRecorder(spinner=False, model="tiny.en", language="en", post_speech_silence_duration =0.1, silero_sensitivity = 0.4, enable_realtime_transcription=False)
+    hot_words = ["bontle"]
     skip_hot_word_check = False
     print("Say something...")
     while True:
