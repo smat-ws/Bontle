@@ -1,1 +1,7 @@
 .env
+realtimesst.log
+voice_signatures.json
+voice_recordings/*
+__pycache__/assist.cpython-313.pyc
+__pycache__/spot.cpython-313.pyc
+__pycache__/tools.cpython-313.pyc
