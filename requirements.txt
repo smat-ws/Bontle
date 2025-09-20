@@ -10,6 +10,7 @@ icrawler
 spotipy
 --extra-index-url https://download.pytorch.org/whl/cu116
 torch
+torchaudio
 git+https://github.com/openai/whisper.git
 pyannote.audio
 numpy
@@ -17,3 +18,9 @@ scipy
 soundfile
 librosa
 scikit-learn
+# CSM TTS dependencies
+transformers>=4.52.1
+huggingface_hub
+accelerate
+transformers>=4.52.1
+datasets

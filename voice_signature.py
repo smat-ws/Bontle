@@ -312,6 +312,8 @@ class VoiceSignatureManager:
     
     def identify_speaker(self, audio_path=None, duration=3, threshold=0.7):
         """Identify speaker from voice sample"""
+        audio_provided_externally = audio_path is not None
+        
         try:
             # Record audio if path not provided
             if audio_path is None:
@@ -340,8 +342,8 @@ class VoiceSignatureManager:
                     best_similarity = similarity
                     best_match = speaker_name
             
-            # Clean up temporary file
-            if "temp_recording" in audio_path or "identification" in audio_path:
+            # Clean up temporary file only if we created it internally
+            if not audio_provided_externally and ("temp_recording" in audio_path or "identification" in audio_path):
                 try:
                     os.remove(audio_path)
                 except:
