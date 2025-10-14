@@ -2,12 +2,31 @@ from RealtimeSTT import AudioToTextRecorder
 import assist
 import time
 import tools
+import spot
+
+def initialize_system():
+    """Initialize all system components"""
+    print("🤖 Bontle Voice Assistant Starting...")
+    print("=" * 40)
+    
+    # Initialize Spotify if credentials are provided
+    spot.initialize_spotify()
+    
+    print("🎙️ Initializing speech recognition...")
+    return True
 
 if __name__ == '__main__':
-    recorder = AudioToTextRecorder(spinner=False, model="tiny.en", language="en", post_speech_silence_duration =0.1, silero_sensitivity = 0.4, enable_realtime_transcription=False)
-    hot_words = ["bontle"]
+    # Initialize system components
+    if not initialize_system():
+        print("❌ System initialization failed!")
+        exit(1)
+    
+    recorder = AudioToTextRecorder(spinner=False, model="small", language="en"
+                                   , post_speech_silence_duration =0.1, silero_sensitivity = 0.4
+                                   , enable_realtime_transcription=False)
+    hot_words = ["bontle","jarvis","buddy","computer","assistant", "hi","hey"]
     skip_hot_word_check = False
-    print("Say something...")
+    print("✅ System ready! Say something...")
     while True:
         current_text = recorder.text()
         print(current_text)

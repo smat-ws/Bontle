@@ -9,6 +9,7 @@ import tools
 import tempfile
 import os
 import numpy as np
+import spot
 from stt_config import stt_config, STTConfig
 from unified_stt import get_unified_stt, get_stt_status, switch_stt_engine, get_available_stt_engines
 
@@ -17,11 +18,22 @@ last_audio_data = None
 last_audio_filename = None
 unified_stt = None
 
+def initialize_system():
+    """Initialize all system components"""
+    print("🤖 Bontle Voice Assistant - Enhanced Edition")
+    print("=" * 50)
+    
+    # Initialize Spotify if credentials are provided
+    print("\n🎵 Initializing Spotify Integration...")
+    spot.initialize_spotify()
+    
+    return True
+
 def initialize_stt_system():
     """Initialize the STT system with user choice"""
     global unified_stt
     
-    print("🤖 Bontle Voice Assistant - Enhanced STT Edition")
+    print("\n🎙️ Initializing Speech-to-Text System...")
     print("=" * 50)
     
     # Initialize unified STT
@@ -250,6 +262,11 @@ def main():
     """Main function to run the enhanced assistant"""
     print("🚀 Starting Enhanced Bontle Assistant...")
     
+    # Initialize system components (Spotify, etc.)
+    if not initialize_system():
+        print("❌ System initialization failed!")
+        return
+    
     # Initialize STT system
     unified_stt = initialize_stt_system()
     status = get_stt_status()
@@ -259,10 +276,11 @@ def main():
         print("💡 Please check your dependencies and configuration")
         return
     
-    print("\n✅ STT system initialized successfully!")
+    print("\n✅ All systems initialized successfully!")
     print("\n🎯 Assistant Commands:")
     print("   💬 Hotwords: 'Bontle', 'Jarvis', 'Hi'")
     print("   🔄 Switch STT: Say 'switch engine' or 'change engine'")
+    print("   🎵 Music: 'play', 'pause', 'skip', 'previous'")
     print("   ❌ Exit: Say 'exit', 'quit', or press Ctrl+C")
     
     current_mode = status['active_engine']
