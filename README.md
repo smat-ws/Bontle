@@ -45,14 +45,13 @@ Revolutionary interruptible text-to-speech system that allows natural conversati
 
 ### AI Conversation System
 - AI-powered conversations using Ollama
-- Text-to-Speech (TTS) using OpenAI
-- Real-time speech processing
-- Weather information
-- Spotify integration
-- Image searching capabilities
+- Speaker-aware conversation history
+- Real-time speech processing with hotword detection
+- Weather information and tool integration
+- Spotify integration and image searching capabilities
 
 ### Voice Signature Recognition 🎤
-**NEW**: Advanced speaker identification system that recognizes who is talking based on their unique voice characteristics.
+Advanced speaker identification system that recognizes who is talking based on their unique voice characteristics:
 
 #### Voice Signature Capabilities:
 - **Speaker Registration**: Register multiple users with their unique voice signatures
@@ -230,7 +229,21 @@ python test_interrupt.py
 
 ## Usage
 
-### Basic Assistant
+### Advanced TTS System
+```python
+from assist import TTS_with_interrupt, TTS, csm_text_to_speech
+
+# Interruptible TTS (recommended for real-time applications)
+result = TTS_with_interrupt("Hello, this message can be interrupted.")
+
+# Standard TTS with CSM + OpenAI fallback
+TTS("Hello, this is a standard TTS message.")
+
+# Direct CSM TTS usage
+csm_text_to_speech("Hello from Sesame CSM!", play_audio=True)
+```
+
+### Real-time Speech Processing
 ```python
 from assist import TTS_with_interrupt, TTS, csm_text_to_speech
 
@@ -285,9 +298,6 @@ from assist import ask_question_memory
 # Ask a question with speaker identification
 response = ask_question_memory("Hello, how are you?", identify_speaker=True)
 print(response)
-
-# Convert response to speech
-TTS(response)
 ```
 
 ### Voice Signature Recognition
@@ -341,13 +351,31 @@ remove_registered_speaker("John Doe")
 ```
 
 ### Interactive Assistant Demo
-Run the main assistant with voice recognition:
+Run the main assistant with real-time speech and interrupt capabilities:
 
 ```bash
+# Full-featured assistant with hotword detection
+python jarvis.py
+```
+
+**Features in jarvis.py:**
+- 🎯 Continuous hotword detection ("Bontle", "Jarvis", "Hi")
+- 🔄 Interrupt TTS playback with new hotwords
+- 👤 Automatic speaker identification using captured audio
+- ⚡ GPU-accelerated model preloading
+- 🎙️ High-quality CSM TTS with OpenAI fallback
+- 🚀 Optimized for minimal latency
+
+```bash
+# Text-based assistant with voice setup
 python assist.py
 ```
 
-This will launch the Bontle AI Assistant with voice signature capabilities.
+**Features in assist.py:**
+- 💬 Text-based conversation interface
+- 🎤 Voice signature setup and management
+- 🔧 Interactive voice settings menu
+- 📊 Speaker database management
 
 ### Voice Signature Management (Standalone)
 Run the voice signature module independently for setup and testing:
@@ -373,35 +401,45 @@ python assist.py --voice-settings
 python assist.py
 ```
 
-## Voice Signature Technical Details
+## Technical Architecture
 
-### Feature Extraction
-The system extracts 51-dimensional feature vectors from voice samples:
-- **Basic Features (8)**: Spectral centroid, rolloff, flux, zero-crossing rate, energy, RMS energy, fundamental frequency, energy variance
-- **Mel-scale Features (40)**: Simplified MFCC-like coefficients for frequency content
-- **Formant Features (3)**: Energy distribution across frequency bands representing vocal tract characteristics
+### TTS Interrupt System
+- **Thread-Safe Design**: Uses `threading.Event` for safe interrupt signaling
+- **Resource Management**: Proper cleanup of audio files and pygame resources
+- **Status Tracking**: Real-time monitoring of TTS playback state
+- **Fallback Support**: CSM → OpenAI TTS with interrupt support in both
 
-### Speaker Identification Algorithm
-1. **Feature Normalization**: All features are normalized to prevent any single feature from dominating
-2. **Cosine Similarity**: Uses cosine distance to compare voice signatures
-3. **Confidence Scoring**: Returns similarity scores between 0.0 and 1.0
-4. **Threshold-based Classification**: Default threshold of 0.7 for positive identification
+### GPU Optimization
+- **Model Preloading**: CSM TTS and RealtimeSTT models preloaded on GPU
+- **Device Priority**: Automatic GPU detection and usage
+- **Memory Management**: Efficient GPU memory usage with proper cleanup
+- **Performance Monitoring**: Device usage tracking and optimization
 
-### Database Storage
-- Voice signatures stored in `voice_signatures.json`
-- Audio recordings saved in `voice_recordings/` directory
-- Automatic backup and recovery of voice database
+### Real-time Audio Pipeline
+```
+Microphone → RealtimeSTT → Hotword Detection → Speaker ID → Conversation → CSM TTS → Audio Output
+                              ↓
+                          Interrupt Signal → Stop TTS → Process New Command
+```
 
-## File Structure
+### File Structure
 
 ```
 Bontle/
-├── assist.py              # Main assistant with voice signature
-├── voice_signatures.json  # Voice signature database
-├── voice_recordings/      # Stored voice samples
-├── requirements.txt       # Dependencies
-├── .env                   # Environment variables
-└── README.md              # This file
+├── assist.py                    # Core conversation logic with TTS interrupt
+├── jarvis.py                    # Real-time speech processing main loop
+├── csm_tts.py                   # Sesame CSM TTS with GPU optimization
+├── voice_signature.py           # Voice recognition and speaker identification
+├── tools.py                     # Utility functions and integrations
+├── test_interrupt.py            # TTS interrupt testing framework
+├── requirements.txt             # All dependencies
+├── .env                         # Configuration and API keys
+├── voice_signatures.json        # Speaker database
+├── voice_recordings/            # Audio samples storage
+├── TTS_INTERRUPT_GUIDE.md       # Complete interrupt documentation
+├── CSM_SETUP_GUIDE.md          # CSM installation and setup
+├── GPU_OPTIMIZATION_SUMMARY.md  # Performance optimization guide
+└── README.md                    # This file
 ```
 
 ## Dependencies
@@ -422,82 +460,258 @@ Bontle/
 
 ### Voice Signature Dependencies
 - `numpy` - Numerical computations
-- `scipy` - Signal processing
-- `soundfile` - Audio file handling
-- `librosa` - Audio analysis
+- `scipy` - Signal processing and audio analysis
+- `librosa` - Advanced audio feature extraction
 - `scikit-learn` - Machine learning utilities
-- `pyaudio` - Audio recording
+- `pyaudio` - Audio recording and streaming
+
+### Optional Dependencies
+- `accelerate` - Hugging Face model acceleration
+- `optimum` - Model optimization
+- `onnxruntime` - ONNX runtime for optimized inference
 
 ## Configuration
 
 ### Environment Variables
 Create a `.env` file with:
-```
+```env
+# Required
 OPENAI_API_KEY=your_openai_api_key
-SYSTEM_PROMPT=Your custom system prompt
+SYSTEM_PROMPT=Your custom system prompt for conversation context
+
+# Optional
+OLLAMA_BASE_URL=http://localhost:11434
+HF_HOME=./models  # Hugging Face model cache directory
+CUDA_VISIBLE_DEVICES=0  # GPU device selection
+```
+
+### TTS Configuration
+Modify settings in `assist.py`:
+```python
+# TTS Settings
+USE_LOCAL_CSM_TTS = True  # Use CSM as primary, OpenAI as fallback
+
+# Interrupt System Settings
+tts_interrupt_flag = threading.Event()  # Thread-safe interrupt signal
+tts_playback_active = threading.Event()  # Playback state tracking
+```
+
+### CSM TTS Settings
+Modify settings in `csm_tts.py`:
+```python
+# Model Configuration
+MODEL_NAME = "facebook/fastspeech2-en-ljspeech"  # CSM model
+SAMPLE_RATE = 22050  # Audio sample rate
+DEVICE_PRIORITY = ["cuda", "cpu"]  # Device selection priority
+
+# Performance Settings
+PRELOAD_MODEL = True  # Preload model for instant generation
+GPU_MEMORY_FRACTION = 0.8  # GPU memory allocation
 ```
 
 ### Voice Signature Settings
-Modify settings in `assist.py`:
+Modify settings in `voice_signature.py`:
 ```python
-# Audio recording parameters
-sample_rate = 16000      # Sample rate for recordings
-channels = 1             # Mono audio
-registration_duration = 5 # Seconds for speaker registration
-identification_duration = 3 # Seconds for speaker identification
-similarity_threshold = 0.7 # Minimum confidence for positive ID
+# Audio Recording Parameters
+SAMPLE_RATE = 16000      # Sample rate for recordings
+CHANNELS = 1             # Mono audio
+REGISTRATION_DURATION = 5 # Seconds for speaker registration
+IDENTIFICATION_DURATION = 3 # Seconds for speaker identification
+SIMILARITY_THRESHOLD = 0.7 # Minimum confidence for positive ID
+
+# Feature Extraction Settings
+N_MFCC = 40             # Number of MFCC coefficients
+N_FFT = 2048            # FFT window size
+HOP_LENGTH = 512        # Hop length for analysis
+```
+
+### RealtimeSTT Settings
+Modify settings in `jarvis.py`:
+```python
+# Speech Recognition Configuration
+recorder = AudioToTextRecorder(
+    model="medium.en",  # Whisper model size
+    language="en",      # Language code
+    post_speech_silence_duration=0.15,  # Silence detection
+    silero_sensitivity=0.4,  # Voice activity detection
+    enable_realtime_transcription=False  # Disable real-time for better accuracy
+)
+
+# Hotword Configuration
+hot_words = ["bontle", "jarvis", "hi"]  # Activation words
 ```
 
 ## Advanced Usage
 
-### Custom Voice Features
-The voice signature system can be extended with additional features by modifying the `extract_voice_features` method in the `VoiceSignatureManager` class.
-
-### Integration with Speech-to-Text
-For full voice-activated conversations, integrate with RealtimeSTT or similar speech recognition systems:
-
+### Custom TTS Integration
 ```python
-# Example integration (requires RealtimeSTT setup)
-def voice_conversation():
+from csm_tts import CSMTextToSpeech
+
+# Direct CSM TTS usage with custom settings
+tts = CSMTextToSpeech()
+audio = tts.generate_audio("Custom text", temperature=0.9)
+tts.play_audio(audio)
+```
+
+### Interrupt System Integration
+```python
+import assist
+import threading
+import time
+
+def background_tts():
+    """Run TTS in background thread"""
+    result = assist.TTS_with_interrupt("This is a long message...")
+    return result
+
+# Start TTS in background
+tts_thread = threading.Thread(target=background_tts)
+tts_thread.start()
+
+# Interrupt after delay
+time.sleep(2)
+if assist.is_tts_active():
+    assist.interrupt_tts()
+    print("TTS interrupted successfully")
+```
+
+### Real-time Speech Integration
+```python
+from RealtimeSTT import AudioToTextRecorder
+import assist
+
+def on_audio_chunk(chunk):
+    """Capture audio for speaker identification"""
+    global captured_audio
+    captured_audio = chunk
+
+def main_loop():
+    recorder = AudioToTextRecorder(on_recorded_chunk=on_audio_chunk)
+    
     while True:
-        # Record audio and convert to text (STT)
-        text = speech_to_text()
+        text = recorder.text()
         
-        # Identify speaker from same audio
-        speaker, confidence = identify_current_speaker()
+        # Check for interrupt during TTS
+        if assist.is_tts_active() and "bontle" in text.lower():
+            assist.interrupt_tts()
         
-        # Process with speaker context
-        response = ask_question_memory(text, identify_speaker=False)
-        
-        # Speak response
-        TTS(response)
+        # Process with speaker ID using captured audio
+        if "bontle" in text.lower():
+            response = assist.ask_question_memory(
+                text, 
+                identify_speaker=True, 
+                audio_file=captured_audio
+            )
+            assist.TTS_with_interrupt(response)
+```
+
+### Voice Database Management
+```python
+from voice_signature import voice_manager
+
+# Advanced voice management
+speakers = voice_manager.list_registered_speakers()
+for speaker in speakers:
+    info = voice_manager.get_speaker_info(speaker)
+    print(f"Speaker: {speaker}, Confidence: {info.get('avg_confidence', 'N/A')}")
+
+# Update speaker features
+voice_manager.update_speaker_features("John Doe")
+
+# Batch speaker identification
+results = voice_manager.batch_identify(audio_files)
 ```
 
 ## Troubleshooting
 
-### Common Issues
+### TTS Issues
 
-1. **Audio Recording Problems**
+1. **CSM TTS Not Working**
+   - Check GPU availability: `python -c "import torch; print(torch.cuda.is_available())"`
+   - Verify PyTorch installation with CUDA support
+   - Check internet connection for model download
+   - Review logs for specific error messages
+
+2. **TTS Interrupt Not Working**
+   - Verify threading imports in assist.py
+   - Check that jarvis.py calls `interrupt_tts()` properly
+   - Test with `python test_interrupt.py`
+   - Ensure pygame mixer is initialized
+
+3. **Audio Playback Problems**
+   - Check audio device availability
+   - Verify pygame installation: `pip install pygame`
+   - Test with different audio formats
+   - Check system audio settings
+
+### Speech Recognition Issues
+
+1. **RealtimeSTT Problems**
    - Ensure microphone permissions are granted
    - Check PyAudio installation: `pip install pyaudio`
-   - Verify audio device availability
+   - Verify CUDA support for Whisper models
+   - Test with different Whisper model sizes
 
-2. **Feature Extraction Errors**
-   - Ensure audio files are valid format
-   - Check minimum recording duration (1 second)
-   - Verify scipy installation for signal processing
+2. **Hotword Detection Issues**
+   - Adjust `silero_sensitivity` in jarvis.py
+   - Check microphone input levels
+   - Test with different hotwords
+   - Verify post_speech_silence_duration settings
 
-3. **Speaker Recognition Accuracy**
+### Voice Signature Issues
+
+1. **Speaker Recognition Accuracy**
    - Use quiet recording environment
    - Ensure consistent microphone distance
    - Re-register speakers with better quality samples
-   - Adjust similarity threshold if needed
+   - Adjust similarity threshold (default: 0.7)
 
-### Performance Tips
-- Register speakers in quiet environments
-- Use consistent microphone setup
-- Record for full duration (5 seconds for registration)
-- Update features if algorithm improves: use option 5 in interactive demo
+2. **Audio Recording Problems**
+   - Check microphone permissions
+   - Verify audio device availability
+   - Test recording duration (minimum 1 second)
+   - Check scipy installation for signal processing
+
+### GPU and Performance Issues
+
+1. **GPU Not Being Used**
+   - Install CUDA-compatible PyTorch: `pip install torch --index-url https://download.pytorch.org/whl/cu118`
+   - Check CUDA installation: `nvidia-smi`
+   - Verify GPU memory availability
+   - Check device selection in csm_tts.py
+
+2. **Model Loading Issues**
+   - Check internet connection for Hugging Face downloads
+   - Verify HF_HOME directory permissions
+   - Clear model cache if corrupted: `rm -rf ~/.cache/huggingface`
+   - Check disk space for model storage
+
+3. **Performance Optimization**
+   - Preload models with `preload_csm_model()`
+   - Use appropriate Whisper model size for your hardware
+   - Adjust GPU memory allocation settings
+   - Monitor system resources during operation
+
+### Common Error Messages
+
+**"CUDA out of memory"**
+- Reduce model size or restart Python session
+- Adjust GPU_MEMORY_FRACTION in csm_tts.py
+- Close other GPU-using applications
+
+**"No module named 'transformers'"**
+- Install missing dependencies: `pip install transformers`
+- Check virtual environment activation
+
+**"Audio device not found"**
+- Check system audio settings
+- Verify microphone connection
+- Test with different audio devices
+
+**"Model download failed"**
+- Check internet connection
+- Verify Hugging Face access
+- Try manual model download
 
 ## Contributing
 
@@ -542,9 +756,9 @@ This project is licensed under the MIT License.
 - 📁 Voice database management
 
 ### v1.0.0 - Initial Release
-- Basic AI assistant functionality
-- Text-to-Speech integration
-- Ollama conversation support
+- 🤖 Basic AI assistant functionality
+- 🗣️ Text-to-Speech integration
+- 💭 Ollama conversation support
 
 ## Performance Benchmarks
 
