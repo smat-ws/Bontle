@@ -135,6 +135,7 @@ def run_realtime_stt_mode():
     print("🎤 Starting RealTime STT mode...")
     print("👂 Listening for hotwords...")
     print("💬 Say 'Bontle' or 'Jarvis' to activate")
+    print("🙏 Say 'Thank you' to interrupt TTS and activate listening")
     
     # Initialize RealTimeSTT with callbacks
     realtime_config = stt_config.get_realtime_config()
@@ -148,6 +149,7 @@ def run_realtime_stt_mode():
     recorder = AudioToTextRecorder(**realtime_config)
     
     hot_words = ["bontle", "jarvis", "hi"]
+    interrupt_words = ["thank you", "thanks"]
     skip_hot_word_check = False
     last_processed_text = ""
     
@@ -157,13 +159,23 @@ def run_realtime_stt_mode():
         # Only process if text has changed
         if current_text and current_text != last_processed_text:
             print(current_text)
+            current_text_lower = current_text.lower()
+            
+            # Check for interrupt words during TTS playback
+            if assist.is_tts_active() and any(interrupt_word in current_text_lower for interrupt_word in interrupt_words):
+                print("🙏 'Thank you' detected - interrupting TTS and activating listening...")
+                assist.interrupt_tts()
+                skip_hot_word_check = True  # Put the assistant in listening mode
+                recorder.stop()
+                recorder.start()
+                continue
             
             # Check if hotword detected during TTS playback - interrupt if so
-            if assist.is_tts_active() and any(hot_word in current_text.lower() for hot_word in hot_words):
+            if assist.is_tts_active() and any(hot_word in current_text_lower for hot_word in hot_words):
                 print("🔄 Hotword detected during TTS - interrupting...")
                 assist.interrupt_tts()
             
-            if any(hot_word in current_text.lower() for hot_word in hot_words) or skip_hot_word_check:
+            if any(hot_word in current_text_lower for hot_word in hot_words) or skip_hot_word_check:
                 if current_text:
                     print("User: " + current_text)
                     recorder.stop()
@@ -203,8 +215,10 @@ def run_kyutai_stt_mode():
     """Run with Kyutai STT for high-quality transcription"""
     print("🎯 Starting Kyutai STT mode...")
     print("🎤 Press Enter to start recording, or type 'quit' to exit")
+    print("🙏 Say 'Thank you' to interrupt TTS and activate listening")
     
     hot_words = ["bontle", "jarvis", "hi"]
+    interrupt_words = ["thank you", "thanks"]
     
     while True:
         user_input = input("\n💬 Press Enter to speak (or 'quit'/'switch' to change mode): ").strip().lower()
@@ -222,14 +236,22 @@ def run_kyutai_stt_mode():
                 
                 if current_text:
                     print(f"📝 Transcribed: {current_text}")
-                    print("User: " + current_text)
+                    current_text_lower = current_text.lower()
+                    
+                    # Check for interrupt words during TTS playback
+                    if assist.is_tts_active() and any(interrupt_word in current_text_lower for interrupt_word in interrupt_words):
+                        print("🙏 'Thank you' detected - interrupting TTS and ready for next command...")
+                        assist.interrupt_tts()
+                        continue  # Go back to listening immediately
                     
                     # Check if hotword detected during TTS playback
-                    if assist.is_tts_active() and any(hot_word in current_text.lower() for hot_word in hot_words):
+                    if assist.is_tts_active() and any(hot_word in current_text_lower for hot_word in hot_words):
                         print("🔄 Hotword detected during TTS - interrupting...")
                         assist.interrupt_tts()
                     
-                    if any(hot_word in current_text.lower() for hot_word in hot_words):
+                    print("User: " + current_text)
+                    
+                    if any(hot_word in current_text_lower for hot_word in hot_words):
                         current_text_with_time = current_text + " " + time.strftime("%Y-m-%d %H-%M-%S")
                         
                         # Process with assistant
@@ -279,7 +301,8 @@ def main():
     print("\n✅ All systems initialized successfully!")
     print("\n🎯 Assistant Commands:")
     print("   💬 Hotwords: 'Bontle', 'Jarvis', 'Hi'")
-    print("   🔄 Switch STT: Say 'switch engine' or 'change engine'")
+    print("   � Interrupt TTS: 'Thank you' (puts assistant in listening mode)")
+    print("   �🔄 Switch STT: Say 'switch engine' or 'change engine'")
     print("   🎵 Music: 'play', 'pause', 'skip', 'previous'")
     print("   ❌ Exit: Say 'exit', 'quit', or press Ctrl+C")
     

@@ -3,6 +3,7 @@ import assist
 import time
 import tools
 import spot
+import os
 
 def initialize_system():
     """Initialize all system components"""
@@ -25,22 +26,37 @@ if __name__ == '__main__':
                                    , post_speech_silence_duration =0.1, silero_sensitivity = 0.4
                                    , enable_realtime_transcription=False)
     hot_words = ["bontle","jarvis","buddy","computer","assistant", "hi","hey"]
+    interrupt_words = ["thank you", "thanks"]
     skip_hot_word_check = False
+    last_processed_text = ""
+    last_audio_filename = None
+    
     print("✅ System ready! Say something...")
+    print("💬 Hotwords: 'Bontle', 'Jarvis', 'Hi'")
+    print("🙏 Interrupt TTS: 'Thank you' (puts assistant in listening mode)")
+    
     while True:
         current_text = recorder.text()
         
         # Only print and process if text has changed
         if current_text and current_text != last_processed_text:
             print(current_text)
+            current_text_lower = current_text.lower()
+            
+            # Check for interrupt words during TTS playback
+            if assist.is_tts_active() and any(interrupt_word in current_text_lower for interrupt_word in interrupt_words):
+                print("🙏 'Thank you' detected - interrupting TTS and activating listening...")
+                assist.interrupt_tts()
+                skip_hot_word_check = True  # Put the assistant in listening mode
+                continue
             
             # Check if hotword detected during TTS playback - interrupt if so
-            if assist.is_tts_active() and any(hot_word in current_text.lower() for hot_word in hot_words):
+            if assist.is_tts_active() and any(hot_word in current_text_lower for hot_word in hot_words):
                 print("🔄 Hotword detected during TTS - interrupting...")
                 assist.interrupt_tts()
                 # Continue to process the new command
             
-            if any(hot_word in current_text.lower() for hot_word in hot_words) or skip_hot_word_check:
+            if any(hot_word in current_text_lower for hot_word in hot_words) or skip_hot_word_check:
                 #make sure there is text
                 if current_text:
                     print("User: " + current_text)

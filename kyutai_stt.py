@@ -20,7 +20,7 @@ warnings.filterwarnings("ignore")
 load_dotenv()
 
 class KyutaiSTT:
-    def __init__(self, model_id="kyutai/stt-2.6b-en-trfs"):
+    def __init__(self, model_id="kyutai/stt-1b-en_fr"):
         """Initialize the Kyutai STT model"""
         self.model_id = model_id
         self.device = self._get_device()
