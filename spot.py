@@ -12,21 +12,50 @@ clientSecret = os.getenv('SPOTIPY_CLIENT_SECRET', '')
 redirect_uri = os.getenv('SPOTIPY_REDIRECT_URI', 'http://localhost:8888/callback')
 
 def spotify_authenicate(client_id, client_secret, redirect_uri, username):
+    """Authenticate with Spotify API"""
     if not client_id or not client_secret:
-        print("Warning: Spotify credentials not configured. Spotify features will be disabled.")
+        print("⚠️  Warning: Spotify credentials not configured. Spotify features will be disabled.")
         return None
-    scope = "user-read-currently-playing user-modify-playback-state"
-    auth_manager = SpotifyOAuth(client_id, client_secret, redirect_uri, scope=scope, username=username)
-    return spotipy.Spotify(auth_manager = auth_manager)
-
-# Only initialize Spotify if credentials are available
-spotify = None
-if clientID and clientSecret:
+    
     try:
-        spotify = spotify_authenicate(clientID, clientSecret, redirect_uri, username)
+        scope = "user-read-currently-playing user-modify-playback-state"
+        auth_manager = SpotifyOAuth(client_id, client_secret, redirect_uri, scope=scope, username=username)
+        spotify_client = spotipy.Spotify(auth_manager=auth_manager)
+        
+        # Test authentication by making a simple API call
+        user_info = spotify_client.current_user()
+        print(f"🎵 Spotify authenticated successfully for user: {user_info.get('display_name', 'Unknown')}")
+        return spotify_client
+        
     except Exception as e:
-        print(f"Failed to initialize Spotify: {e}")
+        print(f"❌ Failed to authenticate with Spotify: {e}")
+        return None
+
+def initialize_spotify():
+    """Initialize Spotify authentication"""
+    global spotify
+    
+    if not clientID or not clientSecret:
+        print("🔇 Spotify credentials not provided - Music controls disabled")
+        print("💡 To enable Spotify features, add your credentials to .env:")
+        print("   SPOTIPY_CLIENT_ID=your_client_id")
+        print("   SPOTIPY_CLIENT_SECRET=your_client_secret") 
+        print("   SPOTIFY_USERNAME=your_username")
         spotify = None
+        return False
+    
+    print("🎵 Initializing Spotify authentication...")
+    spotify = spotify_authenicate(clientID, clientSecret, redirect_uri, username)
+    
+    if spotify is not None:
+        print("✅ Spotify integration ready!")
+        return True
+    else:
+        print("❌ Spotify integration failed!")
+        return False
+
+# Global Spotify client
+spotify = None
 
 def get_current_playing_info():
     global spotify

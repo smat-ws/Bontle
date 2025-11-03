@@ -19,8 +19,9 @@ soundfile
 librosa
 scikit-learn
 # CSM TTS dependencies
-transformers>=4.52.1
+transformers>=4.53.0
 huggingface_hub
 accelerate
-transformers>=4.52.1
 datasets
+# Kyutai STT dependencies (requires transformers >= 4.53.0)
+# Note: The Kyutai model requires the latest transformers version
