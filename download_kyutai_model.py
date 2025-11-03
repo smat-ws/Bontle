@@ -10,16 +10,21 @@ from huggingface_hub import hf_hub_download, login
 from transformers import KyutaiSpeechToTextProcessor, KyutaiSpeechToTextForConditionalGeneration
 import requests
 from pathlib import Path
+from dotenv import load_dotenv
+
+# Load environment variables from .env file
+load_dotenv()
 
 def setup_auth():
     """Setup Hugging Face authentication"""
-    hf_token = "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"
+    hf_token = os.getenv('HF_TOKEN')
     if hf_token:
         login(token=hf_token, add_to_git_credential=True)
         print("🔐 Authenticated with Hugging Face")
         return True
     else:
-        print("❌ No valid Hugging Face token found")
+        print("❌ No valid Hugging Face token found in environment variables")
+        print("💡 Please set HF_TOKEN in your .env file")
         return False
 
 def download_with_retry(repo_id, filename, max_retries=3):
